@@ -1,0 +1,14 @@
+*{box-sizing:border-box}body{width:342px;margin:0;font:13px/1.5 "Segoe UI",Arial,sans-serif;background:#f5f7fb;color:#17233b}
+header{background:#121e33;color:white;padding:17px 18px 14px}h1{font-size:17px;margin:0}header p{margin:4px 0 0;color:#aec3e4}
+main{padding:15px}button{cursor:pointer;transition:filter .15s}button:disabled{opacity:.5;cursor:default}
+.status{display:flex;align-items:center;gap:9px;background:white;border:1px solid #dbe4f0;border-radius:9px;padding:10px;margin-bottom:11px;min-height:42px}
+.dot{width:10px;height:10px;border-radius:50%;background:#8b99ab;flex:none}
+.dot.live{background:#13ba83;box-shadow:0 0 0 3px #d4f8e9}.dot.error{background:#ef6856}
+.start{display:block;background:#2762ea;color:white;border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:700;width:100%}
+.start.stop{background:#d14343}.secondary{margin-top:8px;background:white;border:1px solid #aebfda;color:#263d66;border-radius:8px;padding:9px;width:100%}
+.help{font-size:11px;color:#5a6d87;margin:10px 1px 14px}
+section{border-top:1px solid #d9e0ed;margin-top:12px;padding-top:10px}h2{font-size:13px;margin:0 0 8px}
+h2 span{float:right;color:#3563ab}.actions{display:flex;gap:6px}.actions button{flex:1;border-radius:6px;border:1px solid #cbd5e3;background:white;padding:7px;font-size:11px}
+section p{color:#5a6d87;font-size:11px;margin:4px 0 9px}.fileLabel{display:block;text-align:center;border:1px dashed #879cbd;padding:10px;border-radius:8px;background:white;cursor:pointer}
+input[type=file]{display:none}.note{display:block;margin:5px;color:#40628e;font-size:11px}
+footer{background:#eaf2ff;padding:11px 15px;text-align:center;color:#3c618c;font-size:11px}

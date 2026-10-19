@@ -1,0 +1,29 @@
+#mes-caption-root{position:fixed!important;left:50%!important;top:9vh!important;
+ transform:translateX(-50%)!important;width:min(94vw,1100px)!important;z-index:2147483647!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important;
+ font-family:Arial,"Segoe UI",sans-serif!important;pointer-events:none!important;color:white!important;
+ visibility:hidden!important;box-sizing:border-box!important}
+#mes-caption-root.mes-visible{visibility:visible!important}
+#mes-caption-root .mes-line{font-size:clamp(18px,2.4vw,31px)!important;line-height:1.55!important;
+ color:#fff!important;text-align:center!important;background:rgba(8,15,28,.91)!important;
+ padding:9px 16px!important;border:1px solid rgba(160,190,230,.2)!important;
+ border-radius:12px!important;box-shadow:0 7px 24px #0009!important;pointer-events:auto!important;
+ text-shadow:0 1px 2px #000!important}
+#mes-caption-root .mes-word{appearance:none!important;border:0!important;margin:0!important;
+ padding:0 2px!important;background:none!important;color:inherit!important;font:inherit!important;
+ text-shadow:inherit!important;display:inline!important;cursor:pointer!important;
+ border-bottom:1px dashed rgba(250,208,86,.65)!important}
+#mes-caption-root .mes-word:hover,#mes-caption-root .mes-word:focus-visible{
+ background:#fbd264!important;color:#171d29!important;border-radius:3px!important;text-shadow:none!important}
+#mes-caption-root .mes-card{display:block!important;visibility:visible!important;
+ max-width:min(85vw,420px)!important;min-width:240px!important;background:#fff!important;
+ color:#142036!important;text-shadow:none!important;border-radius:14px!important;
+ padding:16px!important;font:16px/1.45 Arial,sans-serif!important;pointer-events:auto!important;
+ box-shadow:0 12px 40px #000a!important;text-align:left!important;box-sizing:border-box!important}
+#mes-caption-root .mes-card strong{font-size:22px!important;color:#163d9a!important}
+#mes-caption-root .mes-card .mes-meaning{margin-top:7px!important;margin-bottom:12px!important}
+#mes-caption-root .mes-tools{display:flex!important;gap:7px!important}
+#mes-caption-root .mes-tools button{font-size:12px!important;line-height:1.3!important;
+ border:1px solid #c9d4e4!important;border-radius:7px!important;color:#183153!important;
+ background:#f0f4fa!important;cursor:pointer!important;padding:8px!important}
+#mes-caption-root .mes-tools button:disabled{opacity:.35!important;cursor:default!important}
