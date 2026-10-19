@@ -27,3 +27,8 @@
  border:1px solid #c9d4e4!important;border-radius:7px!important;color:#183153!important;
  background:#f0f4fa!important;cursor:pointer!important;padding:8px!important}
 #mes-caption-root .mes-tools button:disabled{opacity:.35!important;cursor:default!important}
+
+#mes-caption-root .mes-example{margin:10px 0 5px!important;color:#40506d!important;font-size:13px!important;line-height:1.35!important;font-style:italic!important}
+#mes-caption-root .mes-pause-info{margin-bottom:9px!important;color:#426b92!important;font-size:11px!important}
+#mes-caption-root .mes-card{max-height:72vh!important;overflow-y:auto!important}
+#mes-caption-root .mes-tools{flex-wrap:wrap!important}

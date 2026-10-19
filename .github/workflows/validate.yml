@@ -1,7 +1,7 @@
 name: Sequential verification · Movie English Study
 on:
   push:
-    branches: [main, feature/sequential-verification-v03]
+    branches: [main, feature/sequential-verification-v03, feature/movie-learning-ux-v04]
   pull_request:
 
 permissions:
@@ -55,8 +55,10 @@ jobs:
           node --check extension/popup.js
       - name: Install headless Chromium driver
         run: npm install --no-save puppeteer-core@24.26.1
-      - name: Exercise rendered subtitle interactions in real Chromium
-        run: node tests/test_browser_ui.js
+      - name: Exercise rendered subtitle and saved vocabulary in real Chromium
+        run: |
+          node tests/test_browser_ui.js
+          node tests/test_popup_ui.js
 
   websocket:
     name: "03 Local audio: WebSocket protocol and origin"
