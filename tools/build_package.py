@@ -21,7 +21,7 @@ def main():
     entries=validate(dictionary)
     m=json.loads((ROOT/"extension/manifest.json").read_text(encoding="utf-8"))
     assert m["manifest_version"]==3
-    assert m["version"]=="0.3.0", "Manifest/version mismatch"
+    assert m["version"]=="0.4.0", "Manifest/version mismatch"
     for file in REQUIRED:
         assert (ROOT/file).is_file(), f"Package missing {file}"
     with ZipFile(OUTPUT,'w',ZIP_DEFLATED) as z:

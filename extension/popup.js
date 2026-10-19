@@ -44,7 +44,9 @@ async function refresh(){
     const result=await send("capture:status");
     const capturing=!!result?.capturing;
     $("dot").className="dot"+(capturing&&result.wsState==="connected"?" live":result.wsState==="error"?" error":"");
-    $("status").textContent=!capturing?"대기 중 · 로컬 서버를 먼저 실행하세요":
+    $("status").textContent=result.lastError && result.wsState!=="connected"
+      ? "오류: "+result.lastError
+      : !capturing?"대기 중 · 로컬 서버를 먼저 실행하세요":
       result.wsState==="connected"?"영어 음성 인식 중":result.wsState==="connecting"?"서버 연결 중...":
       "오디오 캡처 중 · 서버 연결 확인 필요";
     $("toggle").textContent=capturing?"■ 자막 중단":"▶ 영어 자막 시작";

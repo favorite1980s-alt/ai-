@@ -92,7 +92,7 @@ async function ensureOverlay(tabId) {
 }
 async function stopCapture() {
   const state = await getSession();
-  await chrome.storage.session.set({capturing:false,activeTabId:null,wsState:"idle"});
+  await chrome.storage.session.set({capturing:false,activeTabId:null,wsState:"idle",lastError:null});
   if (await hasOffscreen()) {
     try { await chrome.runtime.sendMessage({target:"offscreen",type:"stop"}); } catch (_) {}
   }
@@ -112,7 +112,7 @@ async function startCapture(tabId) {
     // Register the capture before asking the offscreen document to open WebSocket.
     // Otherwise, fast 'connected' callbacks race with, and are overwritten by,
     // a late 'connecting' status write, leaving the popup stuck.
-    await chrome.storage.session.set({capturing:true,activeTabId:tabId,wsState:"connecting"});
+    await chrome.storage.session.set({capturing:true,activeTabId:tabId,wsState:"connecting",lastError:null});
     wsState = "connecting";
     const started = await chrome.runtime.sendMessage({
       target:"offscreen",type:"start",streamId,
@@ -145,8 +145,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "capture:stop": await stopCapture(); return {ok:true};
       case "capture:status": {
         const state=await getSession();
-        const session=await chrome.storage.session.get("wsState");
-        return {ok:true,...state,wsState:session.wsState||wsState};
+        const session=await chrome.storage.session.get(["wsState","lastError"]);
+        return {ok:true,...state,wsState:session.wsState||wsState,lastError:session.lastError||null};
       }
       case "overlay:demo": {
         const tabId=Number(msg.tabId);
@@ -158,7 +158,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case "ws:state":
         wsState = String(msg.state);
-        await chrome.storage.session.set({wsState});
+        await chrome.storage.session.set(msg.state==="connected"?{wsState,lastError:null}:{wsState});
         return {ok:true};
       case "transcript": {
         const state = await getSession();
@@ -167,13 +167,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return {ok:true};
       }
       case "backend:error": {
+        await chrome.storage.session.set({lastError:String(msg.message||"서버 오류").slice(0,160)});
         const state = await getSession();
         await tellTab(state.tabId,{type:"overlay:error",message:String(msg.message||"서버 오류").slice(0,160)});
         return {ok:true};
       }
       default: return {ok:false,error:"Unknown command"};
     }
-  })().then(sendResponse).catch(error => sendResponse({ok:false,error:String(error.message||error)}));
+  })().then(sendResponse).catch(async error => {
+    const message=String(error.message||error);
+    if(msg.type==="capture:start") await chrome.storage.session.set({lastError:message.slice(0,160)});
+    sendResponse({ok:false,error:message});
+  });
   return true;
 });
 chrome.tabs.onRemoved.addListener(async tabId => {

@@ -49,6 +49,18 @@ if (!executablePath) throw Error('No system Chrome found on CI runner.');
         word:k,meaning:entry.meaning_ko,ipa:entry.ipa||'',pos:entry.pos||''
       }:null,fullDictionaryLoaded:true};
     });
+    // Model a playing HTML5 video: Chromium exposes a real DOM but the test has no media stream.
+    await page.evaluate(()=>{
+      const v=document.querySelector("video");
+      window.__isVideoPaused=false;
+      window.__pauseCalls=0;
+      window.__playCalls=0;
+      Object.defineProperty(v,"paused",{configurable:true,get:()=>window.__isVideoPaused});
+      Object.defineProperty(v,"readyState",{configurable:true,get:()=>4});
+      Object.defineProperty(v,"ended",{configurable:true,get:()=>false});
+      v.pause=()=>{window.__isVideoPaused=true;window.__pauseCalls++;};
+      v.play=()=>{window.__isVideoPaused=false;window.__playCalls++;return Promise.resolve();};
+    });
     await page.addStyleTag({path:path.join(root,'extension/content.css')});
     await page.addScriptTag({path:path.join(root,'extension/lexicon.js')});
     await page.addScriptTag({path:path.join(root,'extension/content.js')});
@@ -58,14 +70,34 @@ if (!executablePath) throw Error('No system Chrome found on CI runner.');
     assert.ok((await page.$$eval('.mes-word',nodes=>nodes.map(n=>n.textContent))).includes('somewhere'));
     await page.evaluate(()=>[...document.querySelectorAll('.mes-word')].find(n=>n.textContent==='somewhere').click());
     await page.waitForFunction(()=>document.querySelector('.mes-meaning')?.textContent.includes('어딘가'),{timeout:10000});
+    assert.equal(await page.evaluate(()=>window.__isVideoPaused),true,"Clicking a word must pause playing HTML5 video");
     await page.click('.mes-tools button:nth-child(2)');
     await page.waitForFunction(()=>window.__mesData.savedWords.somewhere?.meaning);
+    assert.match(await page.evaluate(()=>window.__mesData.savedWords.somewhere.example),/somewhere/i);
     assert.match(await page.$eval('.mes-meaning',el=>el.textContent),/어딘가/);
     // User-defined entry overrides bundled dictionary.
+    // New caption arrives during dictionary review: defer until the card closes.
+    await page.evaluate(()=>window.__mesListener({type:'overlay:text',text:'The next sentence is waiting.'}));
+    assert.match(await page.$eval('.mes-line',n=>n.textContent),/somewhere/i);
     await page.click('.mes-tools button:nth-child(3)');
+    assert.equal(await page.evaluate(()=>window.__isVideoPaused),false,"Close resumes video paused by extension");
+    assert.match(await page.$eval('.mes-line',n=>n.textContent),/next sentence/i);
+    await page.evaluate(()=>window.__mesListener({type:'overlay:text',text:"Do you want to go somewhere?"}));
     await page.evaluate(()=>chrome.storage.local.set({userDictionary:{somewhere:'내가 직접 쓴 뜻'}}));
     await page.evaluate(()=>[...document.querySelectorAll('.mes-word')].find(n=>n.textContent==='somewhere').click());
     await page.waitForFunction(()=>document.querySelector('.mes-meaning')?.textContent==='내가 직접 쓴 뜻');
+    await page.click('.mes-tools button:nth-child(3)');
+    // Already paused by the user: the extension must not resume unexpectedly.
+    await page.evaluate(()=>{window.__isVideoPaused=true;});
+    await page.evaluate(()=>[...document.querySelectorAll('.mes-word')].find(n=>n.textContent==='somewhere').click());
+    await page.click('.mes-tools button:nth-child(3)');
+    assert.equal(await page.evaluate(()=>window.__isVideoPaused),true);
+    // Per-user preference disables auto-pause on a playing video.
+    await page.evaluate(()=>chrome.storage.local.set({pauseOnLookup:false}));
+    await page.evaluate(()=>{window.__isVideoPaused=false;});
+    await page.evaluate(()=>[...document.querySelectorAll('.mes-word')].find(n=>n.textContent==='somewhere').click());
+    assert.equal(await page.evaluate(()=>window.__isVideoPaused),false);
+    await page.click('.mes-tools button:nth-child(3)');
     // Fullscreen host relocation on simulated Fullscreen API event.
     await page.evaluate(()=>{
       const layer=document.createElement('section'); layer.id='simulated-fullscreen';document.body.appendChild(layer);
@@ -75,6 +107,6 @@ if (!executablePath) throw Error('No system Chrome found on CI runner.');
     assert.equal(await page.$eval('#mes-caption-root',el=>el.parentElement.id),'simulated-fullscreen');
     await page.evaluate(()=>window.__mesListener({type:'overlay:unmount'}));
     assert.equal(await page.$('#mes-caption-root'),null);
-    console.log('PASS Chromium caption display, Korean preservation, click translation, saved words, user override, fullscreen relocation, unmount');
+    console.log('PASS Chromium caption display, pause/resume, queued transcript, Korean preservation, click translation, context wordbook, user override, preference, fullscreen, unmount');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
