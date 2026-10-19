@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Movie English Study — 오프라인 영어 자막",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Whisper 로컬 실시간 영어 자막, 단어 클릭 영한 사전 및 단어장 (유료 API 없음)",
   "permissions": [
     "tabCapture",

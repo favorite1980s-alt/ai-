@@ -105,19 +105,25 @@ async function startCapture(tabId) {
   // This must happen first: tabCapture requires the user-initiated extension action.
   const streamId = await chrome.tabCapture.getMediaStreamId({targetTabId:tabId});
   if (!streamId) throw Error("탭 오디오를 캡처하지 못했습니다.");
-  await ensureOffscreen();
-  await ensureOverlay(tabId);
-  await tellTab(tabId,{type:"overlay:mount"});
-  const started = await chrome.runtime.sendMessage({
-    target:"offscreen",type:"start",streamId,
-    settings:{sourceLang:"en",targetLang:"en",task:"transcribe"}
-  });
-  if (!started?.ok) {
-    await tellTab(tabId,{type:"overlay:unmount"});
-    throw Error(started?.error || "오디오 캡처 시작 실패");
+  try {
+    await ensureOffscreen();
+    await ensureOverlay(tabId);
+    await tellTab(tabId,{type:"overlay:mount"});
+    // Register the capture before asking the offscreen document to open WebSocket.
+    // Otherwise, fast 'connected' callbacks race with, and are overwritten by,
+    // a late 'connecting' status write, leaving the popup stuck.
+    await chrome.storage.session.set({capturing:true,activeTabId:tabId,wsState:"connecting"});
+    wsState = "connecting";
+    const started = await chrome.runtime.sendMessage({
+      target:"offscreen",type:"start",streamId,
+      settings:{sourceLang:"en",targetLang:"en",task:"transcribe"}
+    });
+    if (!started?.ok) throw Error(started?.error || "오디오 캡처 시작 실패");
+  } catch (error) {
+    // Undo the UI, tab, and session state on any partial startup failure.
+    await stopCapture();
+    throw error;
   }
-  await chrome.storage.session.set({capturing:true,activeTabId:tabId,wsState:"connecting"});
-  wsState = "connecting";
 }
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || (msg.target && msg.target !== "background")) return false;

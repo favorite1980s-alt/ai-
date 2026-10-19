@@ -5,7 +5,10 @@ Set-Location $Root
 if (-not (Get-Command py -ErrorAction SilentlyContinue) -and -not (Get-Command python -ErrorAction SilentlyContinue)) {
   throw 'Python 3.10+ installation is required. Install Python first.'
 }
-$Python = if (Get-Command py -ErrorAction SilentlyContinue) { 'py' } else { 'python' }
+# Prefer setup-python's pinned executable (GitHub runner) over py launcher's system default.
+$Python = if (Get-Command python -ErrorAction SilentlyContinue) { 'python' } else { 'py' }
+& $Python -c "import sys; assert (3,10) <= sys.version_info[:2] < (3,14), 'Python 3.10-3.13 required'"
+if ($LASTEXITCODE -ne 0) { throw 'Unsupported Python version' }
 & $Python -m venv .venv
 if ($LASTEXITCODE -ne 0) { throw 'Failed to create Python virtual environment' }
 & (Join-Path $Root '.venv\Scripts\python.exe') -m pip install --upgrade pip
