@@ -6,7 +6,7 @@ if not exist ".venv\Scripts\python.exe" (
   exit /b 1
 )
 set MES_MODEL=small
-set MES_DEVICE=auto
+set MES_DEVICE=cpu
 set MES_COMPUTE=int8
 echo Movie English Study - Local Whisper server
 echo Keep this window open while watching a movie.

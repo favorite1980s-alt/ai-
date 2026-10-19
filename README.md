@@ -38,7 +38,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 - 콘솔 창을 **계속 열어 두세요.** 닫으면 자막 인식이 중지됩니다.
 - 서버 주소는 로컬 PC `ws://127.0.0.1:8765/ws`입니다.
 - 모델은 기본 `small`이고 **첫 음성 인식 때 모델 가중치를 다운로드**합니다.
-- CUDA 지원 GPU라도 라이브러리 설치 상황에 따라 CPU로 실행될 수 있으며, 속도는 PC에서 확인해야 합니다.
+- 설치 직후 안정적인 동작을 위해 기본값은 CPU(int8)입니다. faster-whisper가 GPU를 감지해도 별도 CUDA cuBLAS/cuDNN DLL이 없으면 추론이 실패할 수 있습니다. 해당 라이브러리가 설치된 PC만 `start-server.bat`의 `MES_DEVICE=cpu`를 `cuda`로 바꾸고 확인하세요.
 - 브라우저에 `http://127.0.0.1:8765/health`를 입력해 서버 작동 여부를 확인할 수 있습니다.
 
 ### 4. 크롬에 확장 프로그램 등록

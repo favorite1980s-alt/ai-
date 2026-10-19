@@ -10,10 +10,13 @@ if (-not (Test-Path $python)) {throw 'Python venv missing'}
 Write-Host '[2/4] Windows native imports'
 & $python -c "import fastapi, numpy, uvicorn, faster_whisper; print('Windows dependencies import OK')"
 if ($LASTEXITCODE -ne 0) {throw 'Windows package imports failed'}
-Write-Host '[3/4] Verified dictionary exists on Windows'
+Write-Host '[3/5] faster-whisper PyAV WAV decoder compatibility'
+& $python tests/test_audio_decode.py
+if ($LASTEXITCODE -ne 0) {throw 'faster-whisper audio decode failed'}
+Write-Host '[4/5] Verified dictionary exists on Windows'
 & $python tests/test_large_dictionary.py
 if ($LASTEXITCODE -ne 0) {throw 'Windows dictionary verification failed'}
-Write-Host '[4/4] Real Windows process/local HTTP health'
+Write-Host '[5/5] Real Windows process/local HTTP health'
 $stdout=Join-Path $env:RUNNER_TEMP 'mes-server.stdout.txt'
 $stderr=Join-Path $env:RUNNER_TEMP 'mes-server.stderr.txt'
 $p=Start-Process -FilePath $python -WorkingDirectory $Root -ArgumentList 'backend/server.py' -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr

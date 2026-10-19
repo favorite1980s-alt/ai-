@@ -22,8 +22,10 @@ log = logging.getLogger("movie-english-study")
 HOST = "127.0.0.1"
 PORT = 8765
 MODEL = os.getenv("MES_MODEL", "small")
-DEVICE = os.getenv("MES_DEVICE", "auto")
-# CTranslate2 auto device choice works with int8 across CPU and supported CUDA GPUs.
+# CPU avoids selecting an NVIDIA GPU that is visible to CTranslate2 but lacks
+# the separately installed cuBLAS/cuDNN runtime. Users with CUDA runtime DLLs
+# can opt in with MES_DEVICE=cuda (or auto) after verifying their installation.
+DEVICE = os.getenv("MES_DEVICE", "cpu")
 COMPUTE = os.getenv("MES_COMPUTE", "int8")
 SAMPLE_RATE = 16000
 MAX_QUEUE = 2
