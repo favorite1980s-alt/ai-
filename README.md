@@ -21,7 +21,7 @@ Python **3.10 이상**을 설치하고 터미널에서 `py --version` 또는 `py
 
 ### 2. 무료 음성 인식 서버 설치 (최초 1회)
 
-압축 푼 폴더의 PowerShell에서:
+압축을 푼 폴더에서 **\`install.bat\`을 더블클릭**하세요. 문제가 있으면 PowerShell에서 직접 다음 명령을 실행합니다:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
@@ -99,7 +99,7 @@ deadline	마감일
 
 ## 개발 단계와 테스트
 
-- GitHub Actions: Python 문법 검사, Manifest JSON 검사, JS 문법 검사, 내장 단어 사전 테스트
+- GitHub Actions: Python 문법 검사, Manifest JSON 검사, JS 문법 검사, 내장 단어 사전 테스트, 모의 WebSocket 오디오 전송·자막 수신 통합 테스트 (실제 Whisper 모델 추론은 별도 검증)
 - Windows 실제 브라우저: **미검증** (설치 → 마이크가 아닌 탭 오디오 → 음성 변환 → 단어 클릭 → 저장 순서로 수동 시험 필요)
 - 자막 시간 정확도·GPU 실시간성·한글 자막과의 간섭: **미검증**
 - 현 버전은 단일 탭, 단일 영어 음성 인식 서버만 지원합니다.
