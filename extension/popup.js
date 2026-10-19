@@ -1,5 +1,42 @@
 const $=id=>document.getElementById(id);
 let busy=false;
+let saveWords={};
+function safeWord(word){return typeof word==="string"?word.slice(0,90):"";}
+function renderWords(){
+  const host=$("wordList");
+  host.replaceChildren();
+  const q=$("wordSearch").value.trim().toLowerCase();
+  const matches=Object.values(saveWords).filter(w=>w && typeof w.word==="string"
+      && (!q||w.word.toLowerCase().includes(q)||(w.meaning||"").includes(q)))
+    .sort((a,b)=>String(b.at||"").localeCompare(String(a.at||""))).slice(0,30);
+  if(!matches.length){
+    const msg=document.createElement("p");
+    msg.className="empty";msg.textContent=q?"검색 결과가 없습니다.":"아직 저장된 단어가 없습니다.";
+    host.appendChild(msg);return;
+  }
+  for(const w of matches){
+    const item=document.createElement("div");item.className="word-item";
+    const content=document.createElement("div");content.className="word-body";
+    const title=document.createElement("strong");title.textContent=safeWord(w.word);
+    const meaning=document.createElement("span");meaning.textContent=String(w.meaning||"").slice(0,160);
+    content.append(title,meaning);
+    if(w.example){
+      const example=document.createElement("small");example.textContent=String(w.example).slice(0,240);
+      content.appendChild(example);
+    }
+    const del=document.createElement("button");del.type="button";del.className="delete-word";
+    del.title="단어 삭제";del.textContent="✕";
+    del.addEventListener("click",async()=>{
+      const result=await chrome.storage.local.get("savedWords");
+      const words=result.savedWords||{};
+      delete words[w.word.toLowerCase()];
+      await chrome.storage.local.set({savedWords:words});
+      await refresh();
+    });
+    item.append(content,del);host.appendChild(item);
+  }
+}
+
 async function send(type, extra={}) {return chrome.runtime.sendMessage({target:"background",type,...extra});}
 async function activeTab(){const tabs=await chrome.tabs.query({active:true,currentWindow:true});return tabs[0]?.id;}
 async function refresh(){
@@ -14,8 +51,17 @@ async function refresh(){
     $("toggle").classList.toggle("stop",capturing);
   }catch(e){$("status").textContent="상태 확인 실패: "+e.message;}
   const stored=await chrome.storage.local.get("savedWords");
-  $("wordCount").textContent=Object.keys(stored.savedWords||{}).length+"개";
+  saveWords=stored.savedWords||{};
+  $("wordCount").textContent=Object.keys(saveWords).length+"개";
+  renderWords();
 }
+$("wordSearch").addEventListener("input",renderWords);
+$("pauseOnLookup").addEventListener("change",async()=>{
+  await chrome.storage.local.set({pauseOnLookup:$("pauseOnLookup").checked});
+});
+chrome.storage.local.get("pauseOnLookup").then(data=>{
+  $("pauseOnLookup").checked=data.pauseOnLookup!==false;
+});
 $("toggle").addEventListener("click",async()=>{
   if(busy)return;busy=true;$("toggle").disabled=true;
   try{
@@ -41,7 +87,7 @@ $("export").addEventListener("click",async()=>{
   const s=await chrome.storage.local.get("savedWords");
   const words=Object.values(s.savedWords||{});
   if(!words.length){$("status").textContent="저장된 단어가 없습니다.";return;}
-  const lines=["word\tmeaning\tsaved_at",...words.map(w=>[w.word,w.meaning,w.at].map(v=>String(v||"").replace(/[\t\r\n]+/g," ")).join("\t"))];
+  const lines=["word\tmeaning\tsaved_at\texample",...words.map(w=>[w.word,w.meaning,w.at,w.example||""].map(v=>String(v||"").replace(/[\t\r\n]+/g," ")).join("\t"))];
   const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/tab-separated-values;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");a.href=url;a.download="movie-english-words.tsv";a.click();

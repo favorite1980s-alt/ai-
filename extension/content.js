@@ -7,12 +7,18 @@
   const ID="mes-caption-root";
   const WORD_RE=/[A-Za-z]+(?:['’][A-Za-z]+)*/g;
   let root=null, line=null, card=null, clearTimer=null, lastLine="";
+  let pendingCaption=null;
+  let heldPlayback=null; // video paused by this extension, if any
+  let pauseOnLookup=true;
   let userDictionary={};
-  chrome.storage.local.get("userDictionary").then(x=>{
+  chrome.storage.local.get(["userDictionary","pauseOnLookup"]).then(x=>{
     userDictionary=x.userDictionary || {};
+    pauseOnLookup=x.pauseOnLookup !== false;
   });
   chrome.storage.onChanged.addListener((changes,area)=>{
-    if(area==="local" && changes.userDictionary) userDictionary=changes.userDictionary.newValue || {};
+    if(area!=="local")return;
+    if(changes.userDictionary) userDictionary=changes.userDictionary.newValue || {};
+    if(changes.pauseOnLookup) pauseOnLookup=changes.pauseOnLookup.newValue !== false;
   });
   function host(){return document.fullscreenElement || document.webkitFullscreenElement || document.documentElement;}
   function moveHost(){if(root?.isConnected && root.parentElement!==host())host().appendChild(root);}
@@ -29,22 +35,60 @@
     root.appendChild(line);
     host().appendChild(root);
   }
-  function dismiss(){if(card){card.remove();card=null;}}
+  function pickPlayingVideo(){
+    return [...document.querySelectorAll("video")]
+      .filter(v=>!v.paused && !v.ended && v.readyState>=1)
+      .sort((a,b)=>{
+        const r=v=>v.getBoundingClientRect();
+        return (r(b).width*r(b).height)-(r(a).width*r(a).height);
+      })[0] || null;
+  }
+  function holdPlayback(){
+    heldPlayback=null;
+    if(!pauseOnLookup)return;
+    const video=pickPlayingVideo();
+    if(!video)return;
+    try{
+      video.pause();
+      if(video.paused)heldPlayback=video;
+    }catch(_){ /* Site player may block direct HTML5 pause. */ }
+  }
+  function releasePlayback(){
+    const video=heldPlayback;
+    heldPlayback=null;
+    if(video && video.isConnected && video.paused && !video.ended){
+      try{const resumed=video.play();if(resumed?.catch)resumed.catch(()=>{});}catch(_){}
+    }
+  }
+  function dismiss({resume=true,clearPending=false}={}){
+    if(card){card.remove();card=null;}
+    if(resume)releasePlayback(); else heldPlayback=null;
+    if(clearPending)pendingCaption=null;
+    else if(pendingCaption!==null){
+      const latest=pendingCaption;
+      pendingCaption=null;
+      paint(latest);
+    }
+  }
   function unmount(){
-    clearTimeout(clearTimer);dismiss();
+    clearTimeout(clearTimer);dismiss({clearPending:true});
     document.querySelectorAll("#"+ID).forEach(n=>n.remove());
     root=null;line=null;lastLine="";
   }
   async function save(word,gloss){
     const stored=await chrome.storage.local.get("savedWords");
     const old=stored.savedWords || {};
-    old[word.toLowerCase()]={word:word.toLowerCase(),meaning:gloss,at:new Date().toISOString()};
+    old[word.toLowerCase()]={
+      word:word.toLowerCase(),meaning:gloss,example:lastLine.slice(0,240),
+      at:new Date().toISOString()
+    };
     await chrome.storage.local.set({savedWords:old});
   }
   function openCard(word,anchor){
-    dismiss();
+    dismiss({resume:false,clearPending:true});
     if(!root)return;
     clearTimeout(clearTimer);
+    holdPlayback();
     // Use the user's local translation first, then the verified 48k+ offline JSON,
     // then the 337-word fallback dictionary if the large data is not installed.
     const own=globalThis.MESDictionary.lookup(word,userDictionary);
@@ -53,6 +97,12 @@
     const title=document.createElement("strong");title.textContent=word.toLowerCase();
     const definition=document.createElement("div");definition.className="mes-meaning";
     definition.textContent=meaning || "사전 검색 중...";
+    const context=document.createElement("p");
+    context.className="mes-example";
+    context.textContent=lastLine;
+    const pausedLabel=document.createElement("div");
+    pausedLabel.className="mes-pause-info";
+    pausedLabel.textContent=heldPlayback?"⏸ 영상 일시정지 · 닫으면 이어 재생":"영상은 계속 재생됩니다";
     const tools=document.createElement("div");tools.className="mes-tools";
     const speak=document.createElement("button");speak.type="button";speak.textContent="🔊 발음";
     speak.addEventListener("click",()=>{
@@ -67,7 +117,9 @@
     });
     const close=document.createElement("button");close.type="button";close.textContent="✕ 닫기";
     close.addEventListener("click",dismiss);
-    tools.append(speak,keep,close);card.append(title,definition,tools);root.appendChild(card);
+    tools.append(speak,keep,close);
+    card.append(title,definition,context,pausedLabel,tools);
+    root.appendChild(card);
     const activeCard=card;
     chrome.runtime.sendMessage({target:"background",type:"dictionary:lookup",word})
       .then(result=>{
@@ -97,8 +149,8 @@
   }
   function paint(text){
     mount();
-    // Keep an open word card visible so the user can finish reviewing a word.
-    if(card?.isConnected)return;
+    // Keep the lookup card visible and queue the latest subtitle while it is open.
+    if(card?.isConnected){pendingCaption=String(text||"");return;}
     const fresh=String(text||"").trim().slice(-240);
     lastLine=fresh;
     line.replaceChildren();
