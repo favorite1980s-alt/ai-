@@ -2,3 +2,6 @@ fastapi>=0.110,<1
 uvicorn>=0.27,<1
 numpy>=1.26,<3
 faster-whisper>=1.1.0,<2
+# faster-whisper 1.2.1 passes metadata_errors to av.open; PyAV removed that
+# argument in v19. Keep this range until the packaged faster-whisper supports it.
+av>=11,<19
