@@ -24,7 +24,7 @@ const runtime={
 const chrome={
  runtime,
  storage:{session:{
-   get:async keys=>keys.reduce((r,k)=>(r[k]=state[k],r),{}),
+   get:async keys=>(Array.isArray(keys)?keys:[keys]).reduce((r,k)=>(r[k]=state[k],r),{}),
    set:async update=>Object.assign(state,update)
  }},
  offscreen:{createDocument:async()=>{}},
