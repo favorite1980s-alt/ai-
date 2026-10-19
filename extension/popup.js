@@ -64,4 +64,13 @@ $("dictionary").addEventListener("change",async e=>{
     $("dictStatus").textContent=Object.keys(words).length+"개 단어를 가져왔습니다.";
   }catch(err){$("dictStatus").textContent="가져오기 실패: "+err.message;}
 });
+async function checkDictionary(){
+  try {
+    const res=await send("dictionary:status");
+    $("dictionaryCount").textContent=res?.loaded
+      ? "✓ 오프라인 영한사전 "+Number(res.entries).toLocaleString("ko-KR")+"개 준비 완료"
+      : "⚠ 대형 사전 미설치 · install.bat 실행 필요 (임시 337개)";
+  }catch(_){$("dictionaryCount").textContent="사전 확인 오류 · 크롬 확장 프로그램 새로고침 필요";}
+}
+checkDictionary();
 refresh();setInterval(refresh,1400);

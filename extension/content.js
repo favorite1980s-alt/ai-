@@ -45,11 +45,14 @@
     dismiss();
     if(!root)return;
     clearTimeout(clearTimer);
-    const meaning=globalThis.MESDictionary.lookup(word,userDictionary);
+    // Use the user's local translation first, then the verified 48k+ offline JSON,
+    // then the 337-word fallback dictionary if the large data is not installed.
+    const own=globalThis.MESDictionary.lookup(word,userDictionary);
+    let meaning=own || null;
     card=document.createElement("aside");card.className="mes-card";
     const title=document.createElement("strong");title.textContent=word.toLowerCase();
     const definition=document.createElement("div");definition.className="mes-meaning";
-    definition.textContent=meaning || "내장 사전에 없음 — 팝업에서 사용자 사전(TSV)을 추가하세요.";
+    definition.textContent=meaning || "사전 검색 중...";
     const tools=document.createElement("div");tools.className="mes-tools";
     const speak=document.createElement("button");speak.type="button";speak.textContent="🔊 발음";
     speak.addEventListener("click",()=>{
@@ -65,6 +68,32 @@
     const close=document.createElement("button");close.type="button";close.textContent="✕ 닫기";
     close.addEventListener("click",dismiss);
     tools.append(speak,keep,close);card.append(title,definition,tools);root.appendChild(card);
+    const activeCard=card;
+    chrome.runtime.sendMessage({target:"background",type:"dictionary:lookup",word})
+      .then(result=>{
+        if (!activeCard.isConnected) return;
+        // Explicit user-supplied glossary has priority over bundled open dictionary.
+        const found=result?.entry;
+        const userKey=word.toLowerCase().replace(/[’]/g,"'");
+        meaning=Object.prototype.hasOwnProperty.call(userDictionary,userKey)
+          ? userDictionary[userKey] : (found?.meaning || own);
+        definition.textContent=meaning ||
+          (result?.fullDictionaryLoaded
+            ? "사전에서 찾지 못했습니다. 사용자 사전에 등록할 수 있습니다."
+            : "대형 영한사전이 설치되지 않았습니다. install.bat을 실행하세요.");
+        if (found?.ipa) {
+          const ipa=document.createElement("div");
+          ipa.className="mes-ipa";
+          ipa.textContent="발음 기호: "+found.ipa;
+          definition.after(ipa);
+        }
+        keep.disabled=!meaning;
+      }).catch(()=>{
+        if(!activeCard.isConnected)return;
+        meaning=own;
+        definition.textContent=meaning || "사전 연결 오류. Chrome 확장 프로그램을 새로고침하세요.";
+        keep.disabled=!meaning;
+      });
   }
   function paint(text){
     mount();
