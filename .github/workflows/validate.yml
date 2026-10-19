@@ -72,6 +72,7 @@ jobs:
           python -m compileall -q backend tools
           python -m pip install --disable-pip-version-check fastapi numpy httpx
           python tests/test_backend.py
+          node tests/test_capture_state.js
 
   windows:
     name: "04 Windows-latest: installer, imports and server health"

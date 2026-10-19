@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from tools.prepare_dictionary import validate
+from prepare_dictionary import validate
 
 ROOT=Path(__file__).resolve().parent.parent
 REQUIRED=[

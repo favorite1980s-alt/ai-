@@ -99,7 +99,7 @@ deadline	마감일
 
 ## 개발 단계와 테스트
 
-- GitHub Actions: Python 문법 검사, Manifest JSON 검사, JS 문법 검사, 내장 단어 사전 테스트, 모의 WebSocket 오디오 전송·자막 수신 통합 테스트 (실제 Whisper 모델 추론은 별도 검증)
+- GitHub Actions는 ① 48,037단어 검증 및 사전 캐시 ② 실제 Chromium UI 화면·단어 클릭 ③ 모의 PCM WebSocket 및 연결상태 경합·정지/실패복구 시험 ④ 실제 Windows-latest 설치·서버 헬스체크 ⑤ 설치 ZIP 필수 파일·사전 SHA 검사로 순차 진행합니다. 실제 영화 음성의 Whisper 추론 및 개인 Windows PC 실환경은 별도 미검증입니다.
 - Windows 실제 브라우저: **미검증** (설치 → 마이크가 아닌 탭 오디오 → 음성 변환 → 단어 클릭 → 저장 순서로 수동 시험 필요)
 - 자막 시간 정확도·GPU 실시간성·한글 자막과의 간섭: **미검증**
 - 현 버전은 단일 탭, 단일 영어 음성 인식 서버만 지원합니다.
