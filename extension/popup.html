@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Movie English Study</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+<header><h1>🎬 Movie English Study</h1><p>무료 로컬 영어 자막 · 클릭 사전</p></header>
+<main>
+<div class="status"><span class="dot" id="dot"></span><span id="status">상태 확인 중...</span></div>
+<button class="start" id="toggle">영어 자막 시작</button>
+<button class="secondary" id="demo">예시 자막으로 단어 클릭 시험</button>
+<p class="help">먼저 PC에서 <strong>start-server.bat</strong>을 실행한 다음 영화 탭에서 시작하세요.</p>
+<section><h2>내 단어장 <span id="wordCount">0개</span></h2>
+<div class="actions"><button id="export">단어장 TSV 저장</button><button id="clear">단어장 비우기</button></div></section>
+<section><h2>영한 사전 확장</h2><p>내장 기본 사전 외에 직접 만든 탭 구분 사전(.tsv/.txt)을 가져올 수 있습니다.</p>
+<label class="fileLabel" for="dictionary">영어↹한국어 사전 가져오기</label>
+<input id="dictionary" type="file" accept=".tsv,.txt,.csv">
+<span class="note" id="dictStatus"></span></section>
+</main><footer>☑ 유료 API 없음 · 자막은 PC 내부에서 생성</footer>
+<script src="popup.js"></script>
+</body></html>
