@@ -12,4 +12,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Failed to create Python virtual environment' }
 if ($LASTEXITCODE -ne 0) { throw 'pip upgrade failed' }
 & (Join-Path $Root '.venv\Scripts\python.exe') -m pip install -r (Join-Path $Root 'backend\requirements.txt')
 if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
+Write-Host 'Installing 48,037-word free dictionary (one-time, 7MB download)...'
+& (Join-Path $Root '.venv\Scripts\python.exe') (Join-Path $Root 'tools\prepare_dictionary.py')
+if ($LASTEXITCODE -ne 0) { throw 'Dictionary installation failed. Network may be unavailable.' }
 Write-Host 'Installation complete. Run start-server.bat, then load the extension folder in Chrome.' -ForegroundColor Green

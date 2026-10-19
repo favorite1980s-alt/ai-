@@ -1,5 +1,62 @@
 // Based on Kami Subs' local tab-capture architecture; MIT attribution in THIRD_PARTY_NOTICES.md.
 const OFFSCREEN_URL = "offscreen.html";
+const DICTIONARY_PATH = "data/words.json";
+const IRREGULAR = Object.freeze({
+  went:"go",gone:"go",was:"be",were:"be",been:"be",had:"have",
+  did:"do",does:"do",done:"do",brought:"bring",thought:"think",
+  said:"say",told:"tell",knew:"know",known:"know",took:"take",
+  taken:"take",made:"make",gave:"give",given:"give",saw:"see",
+  seen:"see",found:"find",felt:"feel",left:"leave",got:"get",
+  gotten:"get",wrote:"write",written:"write",bought:"buy",
+  caught:"catch",ran:"run",ate:"eat",eaten:"eat",spoke:"speak",
+  spoken:"speak",drove:"drive",driven:"drive",broke:"break",
+  broken:"break",chose:"choose",chosen:"choose",sang:"sing",
+  sung:"sing",flew:"fly",flown:"fly",slept:"sleep",stood:"stand"
+});
+let dictionaryPromise = null;
+async function getDictionary(){
+  if (!dictionaryPromise) {
+    dictionaryPromise = (async()=>{
+      const response = await fetch(chrome.runtime.getURL(DICTIONARY_PATH));
+      if (!response.ok) throw Error("Large dictionary is missing. Run install.bat again.");
+      const data = await response.json();
+      if (Object.keys(data).length < 40000) throw Error("Dictionary data is incomplete.");
+      return data;
+    })().catch(error => {
+      dictionaryPromise = null; // allow retry after extension update
+      console.warn("[Movie English Study] Dictionary not ready:", String(error));
+      return null;
+    });
+  }
+  return dictionaryPromise;
+}
+function lookupForms(word){
+  if (typeof word !== "string") return [];
+  const key=word.toLowerCase().replace(/[’]/g,"'").replace(/^[^a-z]+|[^a-z']+$/g,"");
+  if (!key) return [];
+  const forms=[key];
+  if (IRREGULAR[key]) forms.push(IRREGULAR[key]);
+  if (key.endsWith("'s")) forms.push(key.slice(0,-2));
+  if (key.endsWith("ies")) forms.push(key.slice(0,-3)+"y");
+  if (key.endsWith("ves")) forms.push(key.slice(0,-3)+"f",key.slice(0,-3)+"fe");
+  if (key.endsWith("ing")) forms.push(key.slice(0,-3),key.slice(0,-3)+"e");
+  if (key.endsWith("ied")) forms.push(key.slice(0,-3)+"y");
+  if (key.endsWith("ed")) forms.push(key.slice(0,-2),key.slice(0,-1));
+  if (key.endsWith("es")) forms.push(key.slice(0,-2));
+  if (key.endsWith("s")) forms.push(key.slice(0,-1));
+  return [...new Set(forms)];
+}
+function lookupDictionary(data,word){
+  if (!data) return null;
+  for (const candidate of lookupForms(word)){
+    const entry = Object.prototype.hasOwnProperty.call(data,candidate) ? data[candidate] : null;
+    if (entry && typeof entry.meaning_ko==="string" && entry.meaning_ko.trim()){
+      return {word:candidate,meaning:entry.meaning_ko,ipa:entry.ipa||"",pos:entry.pos||"",source:"open-english-korean-dict"};
+    }
+  }
+  return null;
+}
+
 let wsState = "idle";
 async function getSession() {
   const state = await chrome.storage.session.get(["activeTabId", "capturing"]);
@@ -66,6 +123,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || (msg.target && msg.target !== "background")) return false;
   (async () => {
     switch (msg.type) {
+      case "dictionary:lookup": {
+        const data=await getDictionary();
+        return {ok:true,entry:lookupDictionary(data,msg.word),fullDictionaryLoaded:!!data};
+      }
+      case "dictionary:status": {
+        const data=await getDictionary();
+        return {ok:true,loaded:!!data,entries:data?Object.keys(data).length:0};
+      }
       case "capture:start": {
         const tabId = Number(msg.tabId);
         if (!Number.isInteger(tabId)) throw Error("탭을 선택할 수 없습니다.");
