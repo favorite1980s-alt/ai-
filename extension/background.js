@@ -35,7 +35,7 @@ async function ensureOverlay(tabId) {
 }
 async function stopCapture() {
   const state = await getSession();
-  await chrome.storage.session.set({capturing:false,activeTabId:null});
+  await chrome.storage.session.set({capturing:false,activeTabId:null,wsState:"idle"});
   if (await hasOffscreen()) {
     try { await chrome.runtime.sendMessage({target:"offscreen",type:"stop"}); } catch (_) {}
   }
@@ -59,7 +59,7 @@ async function startCapture(tabId) {
     await tellTab(tabId,{type:"overlay:unmount"});
     throw Error(started?.error || "오디오 캡처 시작 실패");
   }
-  await chrome.storage.session.set({capturing:true,activeTabId:tabId});
+  await chrome.storage.session.set({capturing:true,activeTabId:tabId,wsState:"connecting"});
   wsState = "connecting";
 }
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -72,8 +72,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await startCapture(tabId); return {ok:true};
       }
       case "capture:stop": await stopCapture(); return {ok:true};
-      case "capture:status": return {ok:true,...(await getSession()),wsState};
-      case "ws:state": wsState = String(msg.state); return {ok:true};
+      case "capture:status": {
+        const state=await getSession();
+        const session=await chrome.storage.session.get("wsState");
+        return {ok:true,...state,wsState:session.wsState||wsState};
+      }
+      case "overlay:demo": {
+        const tabId=Number(msg.tabId);
+        if(!Number.isInteger(tabId))throw Error("영화 탭을 열어 주세요.");
+        await ensureOverlay(tabId);
+        await tellTab(tabId,{type:"overlay:mount"});
+        await tellTab(tabId,{type:"overlay:text",text:"Do you want to go somewhere? Let's learn English together."});
+        return {ok:true};
+      }
+      case "ws:state":
+        wsState = String(msg.state);
+        await chrome.storage.session.set({wsState});
+        return {ok:true};
       case "transcript": {
         const state = await getSession();
         if (state.capturing && sender.id === chrome.runtime.id)
